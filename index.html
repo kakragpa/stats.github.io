@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <!-- Data Compression (Fixes QR Overflow) -->
+    <!-- Data Compression -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 
     <style>
@@ -25,6 +25,8 @@
             --border-color: #E2E8F0;
             --danger-color: #EF4444;
             --success-color: #10B981;
+            --warning-color: #F59E0B; /* Amber/Yellow for Default Load */
+            --warning-bg: #FFFBEB;
             --purple-color: #8B5CF6;
             --input-bg: #F1F5F9;
             --focus-ring: rgba(37, 99, 235, 0.2);
@@ -414,7 +416,7 @@
         .modal-box {
             background: white;
             width: 90%;
-            max-width: 340px;
+            max-width: 380px;
             padding: 30px;
             border-radius: var(--radius-lg);
             text-align: center;
@@ -461,8 +463,48 @@
         .modal-btn-cancel:hover { background: #E2E8F0; color: var(--text-main); }
         .modal-btn-confirm { background: var(--danger-color); color: white; }
         .modal-btn-confirm:hover { background: #DC2626; }
+        .modal-btn-primary { background: var(--primary-color); color: white; }
+        .modal-btn-primary:hover { background: var(--primary-hover); }
 
-        /* QR Specific Styles */
+        /* Yellow Warning Button */
+        .modal-btn-warning {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+            border: 1px solid #FCD34D;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .modal-btn-warning:hover {
+            background: #FEF3C7;
+        }
+
+        /* History Dropdown */
+        .history-container {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .history-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: block;
+        }
+        .history-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            font-size: 13px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        /* QR & Code Styles */
         #qrcode {
             display: flex;
             justify-content: center;
@@ -472,6 +514,35 @@
             border: 4px solid white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border-radius: 8px;
+        }
+        
+        .code-container {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .code-textarea {
+            width: 100%;
+            height: 60px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            font-family: monospace;
+            font-size: 12px;
+            resize: none;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: var(--input-bg);
         }
         
         #reader {
@@ -490,6 +561,23 @@
             cursor: pointer;
             color: var(--text-muted);
         }
+        
+        /* Divider for Import Modal */
+        .modal-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .modal-divider::before, .modal-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        .modal-divider span { padding: 0 10px; }
 
         @media (max-width: 600px) {
             .grid-header { display: none; }
@@ -550,11 +638,11 @@
         </div>
         
         <div class="secondary-controls">
-            <button class="btn btn-success" onclick="exportQR()" id="btn-export">
-                <i data-lucide="qr-code" size="18"></i> Share QR
+            <button class="btn btn-success" onclick="openExportModal()" id="btn-export">
+                <i data-lucide="share-2" size="18"></i> Export
             </button>
-            <button class="btn btn-purple" onclick="openScanModal()" id="btn-import">
-                <i data-lucide="scan-line" size="18"></i> Scan QR
+            <button class="btn btn-purple" onclick="openImportModal()" id="btn-import">
+                <i data-lucide="download" size="18"></i> Import
             </button>
         </div>
 
@@ -602,27 +690,49 @@
         </div>
     </div>
 
-    <!-- QR Export Modal -->
+    <!-- Export Modal (QR + Text Code) -->
     <div id="export-modal" class="modal-overlay">
         <div class="modal-box">
             <button class="qr-close-btn" onclick="closeModal('export-modal')"><i data-lucide="x" size="20"></i></button>
             <div class="modal-icon modal-icon-qr">
                 <i data-lucide="share-2" size="24"></i>
             </div>
-            <h3 class="modal-title" id="qr-export-title">Your QR Code</h3>
-            <p class="modal-text" id="qr-export-desc">Let others scan this to load your subjects.</p>
+            <h3 class="modal-title" id="export-title">Export Data</h3>
+            <p class="modal-text" id="export-desc">Scan QR or copy the code below.</p>
+            
             <div id="qrcode"></div>
-            <button class="modal-btn modal-btn-cancel" onclick="closeModal('export-modal')" style="width:100%">Close</button>
+            
+            <div class="code-container">
+                <textarea id="export-code-text" class="code-textarea" readonly onclick="this.select()"></textarea>
+                <button class="modal-btn modal-btn-primary" onclick="copyCode()" id="btn-copy" style="width:100%">Copy Code</button>
+            </div>
         </div>
     </div>
 
-    <!-- QR Import Modal -->
+    <!-- Import Modal (Scan + Text Code + History + Default) -->
     <div id="import-modal" class="modal-overlay">
         <div class="modal-box">
             <button class="qr-close-btn" onclick="closeScanModal()"><i data-lucide="x" size="20"></i></button>
-            <h3 class="modal-title" id="qr-import-title">Scan QR Code</h3>
+            <h3 class="modal-title" id="import-title">Import Data</h3>
+            
+            <button class="modal-btn modal-btn-warning" onclick="loadDefaultData()" style="width:100%" id="btn-load-default">
+                <i data-lucide="rotate-ccw" size="16"></i> โหลดดั้งเดิม (Load Default)
+            </button>
+
+            <div class="history-container">
+                <label class="history-label" id="lbl-history">History of import (50):</label>
+                <select id="history-select" class="history-select" onchange="loadFromHistory(this.value)">
+                    <option value="" disabled selected>Select from history...</option>
+                </select>
+            </div>
+            
             <div id="reader"></div>
-            <p class="modal-text" style="margin-bottom:0" id="qr-import-status">Waiting for camera...</p>
+            <p class="modal-text" style="font-size:12px; margin-bottom:15px" id="import-status">Scanning for QR...</p>
+            
+            <div class="modal-divider"><span>OR</span></div>
+            
+            <input type="text" id="import-code-input" class="code-input" placeholder="Paste Code here...">
+            <button class="modal-btn modal-btn-primary" onclick="loadFromCode()" id="btn-load-code" style="width:100%">Load from Code</button>
         </div>
     </div>
 
@@ -643,22 +753,27 @@
                 grade: "Grade",
                 addBtn: "Add Subject",
                 resetBtn: "Reset",
-                exportBtn: "Share QR",
-                importBtn: "Scan QR",
+                exportBtn: "Export",
+                importBtn: "Import",
                 totalCredits: "Total Credits",
                 totalPoints: "Total Points",
                 placeholderSub: "Subject Name",
                 placeholderGrade: "4.0",
-                extraSubName: "Additional Subject",
+                extraSubName: "Subject",
                 modalTitle: "Reset Data?",
-                modalDesc: "This will delete all your current grades and restore the default subjects. Are you sure?",
+                modalDesc: "This will clear all current rows. Are you sure?",
                 modalCancel: "Cancel",
                 modalConfirm: "Yes, Reset",
                 breakdownTitle: "Grade Distribution",
-                qrTitle: "Your QR Code",
-                qrDesc: "Let others scan this to load your subjects.",
-                scanTitle: "Scan QR Code",
-                scanStatus: "Waiting for camera..."
+                exportTitle: "Export Data",
+                exportDesc: "Scan QR or copy the code below.",
+                copyBtn: "Copy Code",
+                importTitle: "Import Data",
+                importStatus: "Scanning for QR...",
+                loadCodeBtn: "Load from Code",
+                pastePlaceholder: "Paste Code here...",
+                historyLabel: "History of import:",
+                loadDefBtn: "Load Default"
             },
             th: {
                 title: "คำนวณเกรดเฉลี่ย",
@@ -668,43 +783,52 @@
                 grade: "เกรด",
                 addBtn: "เพิ่มวิชา",
                 resetBtn: "รีเซ็ต",
-                exportBtn: "แชร์ QR",
-                importBtn: "สแกน QR",
+                exportBtn: "ส่งออก",
+                importBtn: "นำเข้า",
                 totalCredits: "หน่วยกิตรวม",
                 totalPoints: "คะแนนรวม",
                 placeholderSub: "ชื่อวิชา...",
                 placeholderGrade: "4",
-                extraSubName: "วิชาเพิ่มเติม",
+                extraSubName: "วิชา",
                 modalTitle: "รีเซ็ตข้อมูล?",
-                modalDesc: "ระบบจะลบเกรดที่คุณกรอกทั้งหมด และกลับไปใช้รายวิชาเริ่มต้น คุณแน่ใจหรือไม่?",
+                modalDesc: "ระบบจะลบข้อมูลทั้งหมด คุณแน่ใจหรือไม่?",
                 modalCancel: "ยกเลิก",
                 modalConfirm: "ยืนยัน",
                 breakdownTitle: "สรุปจำนวนเกรด",
-                qrTitle: "QR Code ของคุณ",
-                qrDesc: "ให้เพื่อนสแกนเพื่อโหลดรายวิชาของคุณ",
-                scanTitle: "สแกน QR Code",
-                scanStatus: "กำลังเปิดกล้อง..."
+                exportTitle: "ส่งออกข้อมูล",
+                exportDesc: "สแกน QR หรือคัดลอกรหัสด้านล่าง",
+                copyBtn: "คัดลอกรหัส",
+                importTitle: "นำเข้าข้อมูล",
+                importStatus: "กำลังค้นหา QR...",
+                loadCodeBtn: "โหลดจากรหัส",
+                pastePlaceholder: "วางรหัสที่นี่...",
+                historyLabel: "ประวัติการนำเข้า:",
+                loadDefBtn: "โหลดดั้งเดิม (Load Default)"
             }
         };
 
         let currentLang = 'th'; 
+        const HISTORY_KEY = 'gpa_import_history';
+        const HISTORY_LIMIT = 50;
 
-        // Default subjects 
-        const defaultSubjects = [
-            { name: "ท22101 ภาษาไทย 3", credit: 1.5 },
-            { name: "ค22101 คณิตศาสตร์ 3", credit: 1.5 },
-            { name: "ว22101 วิทยาศาสตร์ 3", credit: 1.0 },
-            { name: "ว22103 วิทยาการคำนวณ 2", credit: 1.0 },
-            { name: "ว22104 การออกแบบและเทคโนโลยี 2", credit: 0.5 },
-            { name: "ส22101 สังคมศึกษา ฯ 3", credit: 1.5 },
-            { name: "ส22102 ประวัติศาสตร์ 3", credit: 0.5 },
-            { name: "พ22101 สุขศึกษาและพลศึกษา 3", credit: 1.0 },
-            { name: "ศ22101 ศิลปะ 3", credit: 1.0 },
-            { name: "ง22101 การงานอาชีพ 3", credit: 0.5 },
-            { name: "อ22101 ภาษาอังกฤษ 3", credit: 1.5 },
-            { name: "ส20233 ต้านทุจริตศึกษา 3", credit: 0.5 },
-            { name: "จ22203 เสริมทักษะภาษาจีน 3", credit: 0.5 },
-            { name: "I20201 การศึกษาค้นคว้าฯ", credit: 1.0 }
+        // Specific default subjects as requested
+        const specificDefaults = [
+            { name: "ภาษาไทย", credit: 1.5 },
+            { name: "คณิตศาสตร์", credit: 1.5 },
+            { name: "วิทยาศาสตร์", credit: 1.0 },
+            { name: "วิทยาการคำนวณ", credit: 1.0 },
+            { name: "การออกแบบและเทคโนโลยี", credit: 0.5 },
+            { name: "สังคมศึกษา", credit: 1.5 },
+            { name: "ประวัติศาสตร์", credit: 0.5 },
+            { name: "สุขศึกษาและพลศึกษา", credit: 1.0 },
+            { name: "ศิลปะ", credit: 1.0 },
+            { name: "การงานอาชีพ", credit: 0.5 },
+            { name: "ภาษาอังกฤษ", credit: 4.0 }, /* Updated to 4 as requested */
+            { name: "ต้านทุจริตศึกษา", credit: 0.5 },
+            { name: "เสริมทักษะภาษาจีน", credit: 0.5 },
+            { name: "การศึกษาค้นคว้าและสร้างองค์ความรู้", credit: 1.0 },
+            { name: "เพิ่มเติม", credit: 1.0 },
+            { name: "เพิ่มเติม", credit: 1.0 }
         ];
 
         const courseList = document.getElementById('course-list');
@@ -714,9 +838,9 @@
         let html5QrcodeScanner = null;
 
         window.onload = () => {
-            refreshIcons(); // Initial load
+            refreshIcons();
             updateLanguageUI();
-            loadDefaults();
+            loadDefaults(); // On load, we start empty as per previous request
         };
 
         function toggleLanguage() {
@@ -736,19 +860,28 @@
             // Buttons
             document.getElementById('btn-add').innerHTML = `<i data-lucide="plus-circle" size="18"></i> ${t.addBtn}`;
             document.getElementById('btn-reset').innerHTML = `<i data-lucide="rotate-ccw" size="16"></i> ${t.resetBtn}`;
-            document.getElementById('btn-export').innerHTML = `<i data-lucide="qr-code" size="18"></i> ${t.exportBtn}`;
-            document.getElementById('btn-import').innerHTML = `<i data-lucide="scan-line" size="18"></i> ${t.importBtn}`;
+            document.getElementById('btn-export').innerHTML = `<i data-lucide="share-2" size="18"></i> ${t.exportBtn}`;
+            document.getElementById('btn-import').innerHTML = `<i data-lucide="download" size="18"></i> ${t.importBtn}`;
             
-            // Text
+            // Modal Text
             document.getElementById('modal-title').textContent = t.modalTitle;
             document.getElementById('modal-desc').textContent = t.modalDesc;
             document.getElementById('modal-cancel').textContent = t.modalCancel;
             document.getElementById('modal-confirm').textContent = t.modalConfirm;
             document.getElementById('lbl-breakdown').innerHTML = `<i data-lucide="bar-chart-2" size="16"></i> ${t.breakdownTitle}`;
-            document.getElementById('qr-export-title').textContent = t.qrTitle;
-            document.getElementById('qr-export-desc').textContent = t.qrDesc;
-            document.getElementById('qr-import-title').textContent = t.scanTitle;
-            document.getElementById('qr-import-status').textContent = t.scanStatus;
+            
+            // Export Modal
+            document.getElementById('export-title').textContent = t.exportTitle;
+            document.getElementById('export-desc').textContent = t.exportDesc;
+            document.getElementById('btn-copy').textContent = t.copyBtn;
+
+            // Import Modal
+            document.getElementById('import-title').textContent = t.importTitle;
+            document.getElementById('import-status').textContent = t.importStatus;
+            document.getElementById('btn-load-code').textContent = t.loadCodeBtn;
+            document.getElementById('import-code-input').placeholder = t.pastePlaceholder;
+            document.getElementById('lbl-history').textContent = t.historyLabel;
+            document.getElementById('btn-load-default').innerHTML = `<i data-lucide="rotate-ccw" size="16"></i> ${t.loadDefBtn}`;
 
             document.getElementById('lbl-total-credits').textContent = t.totalCredits;
             document.getElementById('lbl-total-points').textContent = t.totalPoints;
@@ -756,34 +889,34 @@
             document.querySelectorAll('.input-name').forEach(i => i.placeholder = t.placeholderSub);
             document.querySelectorAll('.input-grade').forEach(i => i.placeholder = t.placeholderGrade);
             
-            document.querySelectorAll('.subject-row.extra-subject .input-name').forEach(input => {
-                const otherLang = currentLang === 'en' ? 'th' : 'en';
-                if (input.value === i18n[otherLang].extraSubName || input.value === '') {
-                    input.value = t.extraSubName;
-                }
-            });
-            
             refreshIcons(); 
             calculateGPA(); 
         }
 
         function loadDefaults() {
+            // Start empty as previously requested
             courseList.innerHTML = '';
-            defaultSubjects.forEach((sub, index) => {
+            addSubject("", "", true);
+        }
+
+        function loadDefaultData() {
+            // Load the specific list of subjects requested
+            courseList.innerHTML = '';
+            currentDisplayedGPA = 0;
+            
+            specificDefaults.forEach((sub, index) => {
                 setTimeout(() => {
                     addSubject(sub.name, sub.credit, false);
                 }, index * 30);
             });
-            const t = i18n[currentLang];
-            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 30 + 50);
-            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 30 + 100);
+            
+            closeScanModal();
         }
 
         // --- Core GPA Functions ---
 
         function addSubjectWithAnimation() {
-            const t = i18n[currentLang];
-            addSubject(t.extraSubName, "", true);
+            addSubject("", "", true);
             setTimeout(() => {
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }, 50); 
@@ -810,6 +943,14 @@
 
         function removeRow(btn) {
             const row = btn.closest('.subject-row');
+            if (document.querySelectorAll('.subject-row').length <= 1) {
+                row.querySelector('.input-name').value = '';
+                row.querySelector('.input-credit').value = '';
+                row.querySelector('.input-grade').value = '';
+                calculateGPA();
+                return;
+            }
+
             row.style.opacity = '0';
             row.style.transform = 'translateY(-10px)';
             setTimeout(() => {
@@ -909,55 +1050,162 @@
             animationFrameId = requestAnimationFrame(update);
         }
 
-        // --- QR Code Logic ---
+        // --- Data Logic (Optimized for Short Code) ---
 
-        function exportQR() {
+        function getCompressedDataString() {
             const rows = document.querySelectorAll('.subject-row');
-            let data = [];
+            let rowStrings = [];
             
-            // Compress data: [Name, Credit, Grade]
             rows.forEach(row => {
-                const name = row.querySelector('.input-name').value;
+                let name = row.querySelector('.input-name').value;
                 const credit = row.querySelector('.input-credit').value;
                 const grade = row.querySelector('.input-grade').value;
                 
-                // Only save rows that have at least a name or a credit
                 if(name.trim() !== "" || credit.trim() !== "") {
-                    data.push([name, credit, grade]);
+                    // Sanitize
+                    name = name.replace(/\|/g, "I").replace(/;/g, ",");
+                    rowStrings.push(`${name}|${credit}|${grade}`);
                 }
             });
 
-            const jsonString = JSON.stringify(data);
-            // Use LZ-String to compress the JSON string
-            const compressed = LZString.compressToEncodedURIComponent(jsonString);
+            if (rowStrings.length === 0) return null;
+            const rawString = rowStrings.join(';');
+            return LZString.compressToEncodedURIComponent(rawString);
+        }
+
+        function processImportedString(rawString) {
+            try {
+                let decompressed = LZString.decompressFromEncodedURIComponent(rawString);
+                if (!decompressed) decompressed = rawString;
+
+                if (decompressed.trim().startsWith('[')) {
+                     return JSON.parse(decompressed);
+                }
+
+                if (decompressed.indexOf('|') === -1) return null;
+
+                const rows = decompressed.split(';');
+                return rows.map(row => {
+                    const parts = row.split('|');
+                    if (parts.length < 2) return null; 
+                    return parts; 
+                }).filter(item => item !== null);
+
+            } catch (e) {
+                console.error("Import error:", e);
+                return null;
+            }
+        }
+
+        // --- History Logic ---
+
+        function saveToHistory(code) {
+            if(!code) return;
             
-            // Clear previous QR
+            let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+            const timestamp = new Date().toLocaleString();
+            
+            // Check for duplicates (optional, but good UX)
+            // We'll allow duplicates if timestamp differs, but let's check exact code matches to avoid spam
+            // Actually, let's just push to top
+            
+            const item = { code: code, time: timestamp };
+            
+            // Add to beginning
+            history.unshift(item);
+            
+            // Limit to 50
+            if(history.length > HISTORY_LIMIT) {
+                history = history.slice(0, HISTORY_LIMIT);
+            }
+            
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            updateHistoryDropdown();
+        }
+
+        function updateHistoryDropdown() {
+            const select = document.getElementById('history-select');
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+            
+            // Clear current options except first
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            if(history.length === 0) return;
+
+            history.forEach((item, index) => {
+                const opt = document.createElement("option");
+                // Shorten code for display
+                const shortCode = item.code.length > 20 ? item.code.substring(0, 20) + "..." : item.code;
+                opt.text = `[${item.time}] ${shortCode}`;
+                opt.value = item.code;
+                select.add(opt);
+            });
+        }
+        
+        function loadFromHistory(code) {
+            if(!code) return;
+            const data = processImportedString(code);
+            if(data) {
+                applyImportedData(data);
+                closeScanModal();
+                // Reset select to default
+                document.getElementById('history-select').selectedIndex = 0;
+            } else {
+                alert("Data corrupted in history.");
+            }
+        }
+
+        // --- Export Logic ---
+
+        function openExportModal() {
+            const compressed = getCompressedDataString();
+            if (!compressed) {
+                alert(currentLang === 'en' ? "Please add subjects first." : "กรุณาเพิ่มรายวิชาก่อน");
+                return;
+            }
+
+            const fullCode = compressed;
             document.getElementById("qrcode").innerHTML = "";
-            
-            // Generate New QR
             new QRCode(document.getElementById("qrcode"), {
-                text: compressed,
-                width: 200,
-                height: 200,
+                text: fullCode,
+                width: 180,
+                height: 180,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.L
             });
 
+            document.getElementById('export-code-text').value = fullCode;
             document.getElementById('export-modal').classList.add('active');
             refreshIcons();
         }
 
-        function openScanModal() {
+        function copyCode() {
+            const copyText = document.getElementById("export-code-text");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            const btn = document.getElementById('btn-copy');
+            const originalText = btn.textContent;
+            btn.textContent = currentLang === 'en' ? "Copied!" : "คัดลอกแล้ว!";
+            setTimeout(() => { btn.textContent = originalText; }, 2000);
+        }
+
+        // --- Import Logic ---
+
+        function openImportModal() {
             document.getElementById('import-modal').classList.add('active');
+            document.getElementById('import-code-input').value = "";
             refreshIcons();
+            updateHistoryDropdown();
             
-            // Start Scanner
             if(!html5QrcodeScanner) {
                 html5QrcodeScanner = new Html5QrcodeScanner(
                     "reader", 
                     { fps: 10, qrbox: {width: 250, height: 250} },
-                    /* verbose= */ false
+                    false
                 );
                 html5QrcodeScanner.render(onScanSuccess, onScanFailure);
             }
@@ -967,67 +1215,57 @@
             closeModal('import-modal');
             if(html5QrcodeScanner) {
                 html5QrcodeScanner.clear().then(_ => {
-                    html5QrcodeScanner = null; // Reset to allow re-initialization
-                }).catch(error => {
-                    console.error("Failed to clear html5QrcodeScanner. ", error);
-                });
+                    html5QrcodeScanner = null;
+                }).catch(error => { console.error(error); });
+            }
+        }
+
+        function loadFromCode() {
+            const inputVal = document.getElementById('import-code-input').value.trim();
+            if (!inputVal) return;
+            
+            const data = processImportedString(inputVal);
+            if (data) {
+                saveToHistory(inputVal); // Save to history on manual import
+                applyImportedData(data);
+                closeScanModal();
+            } else {
+                alert(currentLang === 'en' ? "Invalid Code format." : "รูปแบบรหัสไม่ถูกต้อง");
             }
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            // Handle the scanned code
-            try {
-                // Try to decompress first
-                let jsonString = LZString.decompressFromEncodedURIComponent(decodedText);
-                
-                // If null (not compressed) or empty, maybe it's raw JSON? 
-                // (Backward compatibility or if user scanned raw text)
-                if (!jsonString) {
-                    jsonString = decodedText;
-                }
-                
-                const data = JSON.parse(jsonString);
-                
-                if(Array.isArray(data)) {
-                    // Valid data found
-                    closeScanModal();
-                    
-                    // Clear current list
-                    courseList.innerHTML = '';
-                    currentDisplayedGPA = 0;
-
-                    // Populate
-                    data.forEach((item, index) => {
-                        // Support both format: [name, credit, grade] (New) AND {name, credit} (Old structure fallback if needed)
-                        let name = "", credit = "", grade = "";
-                        
-                        if(Array.isArray(item)) {
-                            name = item[0];
-                            credit = item[1];
-                            grade = item[2];
-                        } else {
-                            name = item.name;
-                            credit = item.credit;
-                            grade = item.grade || "";
-                        }
-
-                        setTimeout(() => {
-                            addSubject(name, credit, false, grade);
-                        }, index * 50);
-                    });
-
-                } else {
-                    alert("Invalid QR Code format");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Could not read QR data. Make sure it's a valid GPA code.");
+            const data = processImportedString(decodedText);
+            if(data) {
+                saveToHistory(decodedText); // Save to history on scan
+                applyImportedData(data);
+                closeScanModal();
+            } else {
+                alert(currentLang === 'en' ? "Invalid QR Data" : "ข้อมูล QR ไม่ถูกต้อง");
             }
         }
 
-        function onScanFailure(error) {
-            // handle scan failure, usually better to ignore and keep scanning.
-            // console.warn(`Code scan error = ${error}`);
+        function onScanFailure(error) { /* Ignore */ }
+
+        function applyImportedData(data) {
+            courseList.innerHTML = '';
+            currentDisplayedGPA = 0;
+
+            data.forEach((item, index) => {
+                let name = "", credit = "", grade = "";
+                if(Array.isArray(item)) {
+                    name = item[0];
+                    credit = item[1];
+                    grade = item[2];
+                } else {
+                    name = item.name;
+                    credit = item.credit;
+                    grade = item.grade || "";
+                }
+                setTimeout(() => {
+                    addSubject(name, credit, false, grade);
+                }, index * 50);
+            });
         }
 
     </script>
