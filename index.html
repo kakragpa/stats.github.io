@@ -4,19 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPA Calculator</title>
+    <!-- Import Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Data Compression (Fixes QR Overflow) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-primary: #111111;
-            --text-secondary: #888888;
-            --border-color: #eeeeee;
-            --input-bg: #f9f9f9;
-            --accent-color: #000000;
-            --danger-color: #ff4444;
-            --card-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            --hover-shadow: 0 4px 12px rgba(0,0,0,0.06);
-            --blue-border: #81D4FA;
-            --blue-bg: #E1F5FE;
+            --primary-color: #2563EB; /* Vibrant Blue */
+            --primary-hover: #1d4ed8;
+            --primary-light: #EFF6FF;
+            --bg-color: #F8FAFC; /* Very light cool gray */
+            --card-bg: #ffffff;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border-color: #E2E8F0;
+            --danger-color: #EF4444;
+            --success-color: #10B981;
+            --purple-color: #8B5CF6;
+            --input-bg: #F1F5F9;
+            --focus-ring: rgba(37, 99, 235, 0.2);
+            --card-shadow: 0 10px 40px -10px rgba(37, 99, 235, 0.15);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
         }
 
         * {
@@ -25,9 +41,9 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-primary);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
             display: flex;
@@ -37,267 +53,352 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
-            padding-bottom: 80px;
+            max-width: 700px;
+            padding-bottom: 100px;
         }
 
+        /* --- Header --- */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            padding: 0 5px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         h1 {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 800;
             margin: 0;
+            color: var(--text-main);
             letter-spacing: -0.5px;
         }
 
         .lang-btn {
-            background: var(--input-bg);
-            border: 1px solid transparent;
+            background: white;
+            border: 1px solid var(--border-color);
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 99px;
             font-size: 13px;
             font-weight: 600;
+            color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .lang-btn:hover {
-            background: #f0f0f0;
-            transform: translateY(-1px);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            background: var(--primary-light);
         }
 
+        /* --- GPA Card --- */
         .gpa-card {
-            background: var(--text-primary);
+            background: linear-gradient(135deg, var(--primary-color), #1E40AF);
             color: white;
-            padding: 30px;
-            border-radius: 20px;
+            padding: 40px 30px;
+            border-radius: var(--radius-lg);
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 35px;
             box-shadow: var(--card-shadow);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .gpa-card:hover { transform: scale(1.02); }
+        .gpa-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+            pointer-events: none;
+        }
+
+        .gpa-card:hover { transform: translateY(-5px); }
 
         .gpa-label {
-            font-size: 13px;
-            opacity: 0.7;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 10px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
             display: block;
         }
 
         .gpa-value {
-            font-size: 56px;
+            font-size: 72px;
             font-weight: 800;
             line-height: 1;
+            letter-spacing: -2px;
             font-variant-numeric: tabular-nums;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
+        /* --- List Headers --- */
         .grid-header {
             display: grid;
-            grid-template-columns: 3fr 1fr 1fr 40px;
-            gap: 15px;
-            padding: 0 15px;
-            margin-bottom: 15px;
+            grid-template-columns: 3fr 0.8fr 0.8fr 40px;
+            gap: 12px;
+            padding: 0 20px;
+            margin-bottom: 12px;
             font-size: 11px;
             font-weight: 700;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
+        /* --- Subject Rows --- */
         .subject-row {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 10px 15px;
+            background: var(--card-bg);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 12px;
             margin-bottom: 12px;
             display: grid;
-            grid-template-columns: 3fr 1fr 1fr 40px;
-            gap: 15px;
+            grid-template-columns: 3fr 0.8fr 0.8fr 40px;
+            gap: 12px;
             align-items: center;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: box-shadow 0.3s ease, border-color 0.3s ease;
-        }
-
-        .subject-row.extra-subject {
-            border: 2px solid var(--blue-border);
-            background-color: var(--blue-bg);
-        }
-        
-        .subject-row.extra-subject input {
-            background-color: #ffffff;
-            border-color: rgba(255,255,255,0.5);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
         }
 
         .slide-in {
-            animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation: slideUpFade 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
         }
 
         @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .subject-row:focus-within {
-            border-color: var(--accent-color);
+        .subject-row:focus-within, .subject-row:hover {
             box-shadow: var(--hover-shadow);
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.2);
         }
 
-        .subject-row.extra-subject:focus-within {
-            border-color: #29B6F6;
-            box-shadow: 0 4px 15px rgba(129, 212, 250, 0.4);
-        }
-
+        /* Inputs */
         input {
             width: 100%;
-            padding: 12px;
+            padding: 12px 14px;
             border: 1px solid transparent;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             background: var(--input-bg);
             font-size: 15px;
             font-weight: 500;
-            color: var(--text-primary);
+            color: var(--text-main);
             outline: none;
             transition: all 0.2s ease;
         }
 
         input:focus {
             background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transform: scale(1.02);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--focus-ring);
         }
 
         .input-name { font-weight: 600; }
+        .input-credit, .input-grade { text-align: center; }
 
+        /* Remove Button */
         .remove-btn {
             background: none;
             border: none;
-            color: var(--danger-color);
-            font-size: 22px;
+            color: #CBD5E1;
             cursor: pointer;
-            padding: 0;
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0.2;
+            border-radius: 8px;
             transition: all 0.2s ease;
         }
 
         .remove-btn:hover { 
-            opacity: 1; 
-            transform: rotate(90deg);
+            color: var(--danger-color);
+            background: #FEF2F2;
         }
 
+        /* --- Controls --- */
         .controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .secondary-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-top: 30px;
+            margin-top: 15px;
         }
 
         .btn {
             padding: 16px;
-            border-radius: 12px;
-            font-size: 14px;
+            border-radius: var(--radius-md);
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            transition: transform 0.1s, box-shadow 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
-        .btn:active { transform: scale(0.97); }
+        .btn:active { transform: scale(0.98); }
 
         .btn-primary {
-            background-color: var(--text-primary);
+            background-color: var(--primary-color);
             color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
         }
 
         .btn-outline {
             background-color: white;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
+            border: 2px solid #F1F5F9;
+            color: var(--text-muted);
         }
 
+        .btn-outline:hover {
+            border-color: var(--border-color);
+            color: var(--text-main);
+            background: #f8fafc;
+        }
+        
+        .btn-success {
+            background-color: white;
+            color: var(--success-color);
+            border: 2px solid #ECFDF5;
+        }
+        .btn-success:hover {
+            border-color: var(--success-color);
+            background: #ECFDF5;
+        }
+
+        .btn-purple {
+            background-color: white;
+            color: var(--purple-color);
+            border: 2px solid #F5F3FF;
+        }
+        .btn-purple:hover {
+            border-color: var(--purple-color);
+            background: #F5F3FF;
+        }
+
+        /* --- Stats Footer --- */
         .stats-footer {
             margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
+            background: white;
+            padding: 20px 25px;
+            border-radius: var(--radius-md);
             display: flex;
-            justify-content: space-between;
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 30px;
+            justify-content: space-around;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
 
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        /* --- Breakdown --- */
         .breakdown-section {
-            margin-top: 20px;
+            margin-top: 30px;
         }
         
         .breakdown-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
-            text-transform: uppercase;
-            color: var(--text-secondary);
+            color: var(--text-main);
             margin-bottom: 15px;
-            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .breakdown-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         .grade-box {
-            background: var(--input-bg);
-            border: 1px solid transparent;
-            border-radius: 12px;
-            padding: 12px 5px;
+            background: white;
+            border: 1px solid #F1F5F9;
+            border-radius: var(--radius-sm);
+            padding: 15px 5px;
             text-align: center;
             transition: all 0.2s;
         }
 
         .grade-box.active {
-            background: white;
-            border-color: var(--border-color);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-color: var(--primary-color);
+            background: var(--primary-light);
         }
 
         .gb-label {
             font-size: 11px;
-            color: var(--text-secondary);
+            font-weight: 600;
+            color: var(--text-muted);
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
 
+        .grade-box.active .gb-label { color: var(--primary-color); }
+
         .gb-count {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-            opacity: 0.3;
+            font-size: 16px;
+            font-weight: 800;
+            color: #CBD5E1;
         }
         
         .grade-box.active .gb-count {
-            opacity: 1;
+            color: var(--primary-color);
         }
 
+        /* --- Modal --- */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(4px);
             display: flex;
             justify-content: center;
@@ -305,43 +406,90 @@
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: all 0.3s ease;
         }
 
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
 
         .modal-box {
             background: white;
             width: 90%;
-            max-width: 320px;
-            padding: 25px;
-            border-radius: 20px;
+            max-width: 340px;
+            padding: 30px;
+            border-radius: var(--radius-lg);
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
         .modal-overlay.active .modal-box { transform: scale(1); }
 
-        .modal-title { margin: 0 0 10px 0; font-size: 18px; font-weight: 700; }
-        .modal-text { margin: 0 0 25px 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
-        .modal-actions { display: flex; gap: 10px; }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            background: #FEF2F2;
+            color: var(--danger-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px auto;
+        }
+        
+        .modal-icon-qr {
+            background: #ECFDF5;
+            color: var(--success-color);
+        }
+
+        .modal-title { margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .modal-text { margin: 0 0 25px 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 12px; }
         
         .modal-btn {
             flex: 1;
             padding: 12px;
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
             font-size: 14px;
             font-weight: 600;
             border: none;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .modal-btn-cancel { background: var(--input-bg); color: var(--text-primary); }
-        .modal-btn-confirm { background: var(--text-primary); color: white; }
+        .modal-btn-cancel { background: #F1F5F9; color: var(--text-muted); }
+        .modal-btn-cancel:hover { background: #E2E8F0; color: var(--text-main); }
+        .modal-btn-confirm { background: var(--danger-color); color: white; }
+        .modal-btn-confirm:hover { background: #DC2626; }
+
+        /* QR Specific Styles */
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        #qrcode img {
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .qr-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
 
         @media (max-width: 600px) {
             .grid-header { display: none; }
@@ -349,13 +497,18 @@
                 grid-template-columns: 1fr 1fr 40px; 
                 grid-template-rows: auto auto;
                 gap: 10px;
-                padding: 15px;
+                padding: 16px;
             }
-            .input-name { grid-column: 1 / -1; font-size: 16px; background: transparent; padding: 0 0 8px 0; border-radius: 0; }
-            .remove-btn { grid-column: 3; grid-row: 2; height: 100%; }
-            h1 { font-size: 18px; }
-            .gpa-value { font-size: 48px; }
+            .input-name { grid-column: 1 / -1; font-size: 16px; background: transparent; padding: 0 0 8px 0; border-radius: 0; border-bottom: 1px solid transparent; }
+            .input-name:focus { box-shadow: none; border-bottom-color: var(--primary-color); }
+            .remove-btn { grid-column: 3; grid-row: 2; height: 100%; justify-self: end; }
+            .input-credit, .input-grade { background: var(--input-bg); padding: 10px; text-align: left; }
+            h1 { font-size: 20px; }
+            .gpa-value { font-size: 64px; }
             .breakdown-grid { grid-template-columns: repeat(4, 1fr); }
+            .controls { grid-template-columns: 1fr; }
+            .secondary-controls { grid-template-columns: 1fr 1fr; }
+            .btn { width: 100%; }
         }
     </style>
 </head>
@@ -363,8 +516,14 @@
 
     <div class="container">
         <header>
-            <h1 id="app-title">GPA Calculator</h1>
-            <button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle">TH</button>
+            <div class="brand">
+                <i data-lucide="graduation-cap" style="color: var(--primary-color);"></i>
+                <h1 id="app-title">GPA Calculator</h1>
+            </div>
+            <button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle">
+                <i data-lucide="globe" size="14"></i>
+                <span>TH</span>
+            </button>
         </header>
 
         <div class="gpa-card">
@@ -382,17 +541,39 @@
         <div id="course-list"></div>
 
         <div class="controls">
-            <button class="btn btn-primary" onclick="addSubjectWithAnimation()" id="btn-add">+ Add Subject</button>
-            <button class="btn btn-outline" onclick="openResetModal()" id="btn-reset">Reset</button>
+            <button class="btn btn-primary" onclick="addSubjectWithAnimation()" id="btn-add">
+                <i data-lucide="plus-circle" size="18"></i> Add Subject
+            </button>
+            <button class="btn btn-outline" onclick="openResetModal()" id="btn-reset">
+                <i data-lucide="rotate-ccw" size="16"></i> Reset
+            </button>
+        </div>
+        
+        <div class="secondary-controls">
+            <button class="btn btn-success" onclick="exportQR()" id="btn-export">
+                <i data-lucide="qr-code" size="18"></i> Share QR
+            </button>
+            <button class="btn btn-purple" onclick="openScanModal()" id="btn-import">
+                <i data-lucide="scan-line" size="18"></i> Scan QR
+            </button>
         </div>
 
         <div class="stats-footer">
-            <span id="lbl-total-credits">Total Credits: <strong id="total-credits">0</strong></span>
-            <span id="lbl-total-points">Total Points: <strong id="total-points">0</strong></span>
+            <div class="stat-item">
+                <span id="lbl-total-credits">Total Credits</span>
+                <span class="stat-value" id="total-credits">0</span>
+            </div>
+            <div style="width: 1px; background: #E2E8F0;"></div>
+            <div class="stat-item">
+                <span id="lbl-total-points">Total Points</span>
+                <span class="stat-value" id="total-points">0</span>
+            </div>
         </div>
 
         <div class="breakdown-section">
-            <div class="breakdown-title" id="lbl-breakdown">Grade Distribution</div>
+            <div class="breakdown-title" id="lbl-breakdown">
+                <i data-lucide="bar-chart-2" size="16"></i> Grade Distribution
+            </div>
             <div class="breakdown-grid">
                 <div class="grade-box" id="box-4"><span class="gb-label">4 (A)</span><span class="gb-count" id="count-4">0</span></div>
                 <div class="grade-box" id="box-3-5"><span class="gb-label">3.5 (B+)</span><span class="gb-count" id="count-3-5">0</span></div>
@@ -406,18 +587,53 @@
         </div>
     </div>
 
+    <!-- Reset Modal -->
     <div id="reset-modal" class="modal-overlay">
         <div class="modal-box">
+            <div class="modal-icon">
+                <i data-lucide="alert-triangle" size="24"></i>
+            </div>
             <h3 class="modal-title" id="modal-title">Reset?</h3>
             <p class="modal-text" id="modal-desc">This will clear all your inputs.</p>
             <div class="modal-actions">
-                <button class="modal-btn modal-btn-cancel" onclick="closeModal()" id="modal-cancel">Cancel</button>
-                <button class="modal-btn modal-btn-confirm" onclick="confirmReset()" id="modal-confirm">Confirm</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal('reset-modal')" id="modal-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmReset()" id="modal-confirm">Reset</button>
             </div>
         </div>
     </div>
 
+    <!-- QR Export Modal -->
+    <div id="export-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="qr-close-btn" onclick="closeModal('export-modal')"><i data-lucide="x" size="20"></i></button>
+            <div class="modal-icon modal-icon-qr">
+                <i data-lucide="share-2" size="24"></i>
+            </div>
+            <h3 class="modal-title" id="qr-export-title">Your QR Code</h3>
+            <p class="modal-text" id="qr-export-desc">Let others scan this to load your subjects.</p>
+            <div id="qrcode"></div>
+            <button class="modal-btn modal-btn-cancel" onclick="closeModal('export-modal')" style="width:100%">Close</button>
+        </div>
+    </div>
+
+    <!-- QR Import Modal -->
+    <div id="import-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="qr-close-btn" onclick="closeScanModal()"><i data-lucide="x" size="20"></i></button>
+            <h3 class="modal-title" id="qr-import-title">Scan QR Code</h3>
+            <div id="reader"></div>
+            <p class="modal-text" style="margin-bottom:0" id="qr-import-status">Waiting for camera...</p>
+        </div>
+    </div>
+
     <script>
+        // Init Icons
+        function refreshIcons() {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
         const i18n = {
             en: {
                 title: "GPA Calculator",
@@ -425,10 +641,12 @@
                 subject: "Subject",
                 credit: "Credit",
                 grade: "Grade",
-                addBtn: "+ Add Subject",
+                addBtn: "Add Subject",
                 resetBtn: "Reset",
-                totalCredits: "Total Credits: ",
-                totalPoints: "Total Points: ",
+                exportBtn: "Share QR",
+                importBtn: "Scan QR",
+                totalCredits: "Total Credits",
+                totalPoints: "Total Points",
                 placeholderSub: "Subject Name",
                 placeholderGrade: "4.0",
                 extraSubName: "Additional Subject",
@@ -436,18 +654,24 @@
                 modalDesc: "This will delete all your current grades and restore the default subjects. Are you sure?",
                 modalCancel: "Cancel",
                 modalConfirm: "Yes, Reset",
-                breakdownTitle: "Grade Distribution"
+                breakdownTitle: "Grade Distribution",
+                qrTitle: "Your QR Code",
+                qrDesc: "Let others scan this to load your subjects.",
+                scanTitle: "Scan QR Code",
+                scanStatus: "Waiting for camera..."
             },
             th: {
                 title: "คำนวณเกรดเฉลี่ย",
-                gpaLbl: "เกรดเฉลี่ยสะสม (GPA)",
+                gpaLbl: "เกรดเฉลี่ย (GPA)",
                 subject: "ชื่อวิชา",
                 credit: "หน่วยกิต",
                 grade: "เกรด",
-                addBtn: "+ เพิ่มวิชา",
+                addBtn: "เพิ่มวิชา",
                 resetBtn: "รีเซ็ต",
-                totalCredits: "หน่วยกิตรวม: ",
-                totalPoints: "คะแนนรวม: ",
+                exportBtn: "แชร์ QR",
+                importBtn: "สแกน QR",
+                totalCredits: "หน่วยกิตรวม",
+                totalPoints: "คะแนนรวม",
                 placeholderSub: "ชื่อวิชา...",
                 placeholderGrade: "4",
                 extraSubName: "วิชาเพิ่มเติม",
@@ -455,12 +679,17 @@
                 modalDesc: "ระบบจะลบเกรดที่คุณกรอกทั้งหมด และกลับไปใช้รายวิชาเริ่มต้น คุณแน่ใจหรือไม่?",
                 modalCancel: "ยกเลิก",
                 modalConfirm: "ยืนยัน",
-                breakdownTitle: "สรุปจำนวนเกรด"
+                breakdownTitle: "สรุปจำนวนเกรด",
+                qrTitle: "QR Code ของคุณ",
+                qrDesc: "ให้เพื่อนสแกนเพื่อโหลดรายวิชาของคุณ",
+                scanTitle: "สแกน QR Code",
+                scanStatus: "กำลังเปิดกล้อง..."
             }
         };
 
         let currentLang = 'th'; 
 
+        // Default subjects 
         const defaultSubjects = [
             { name: "ท22101 ภาษาไทย 3", credit: 1.5 },
             { name: "ค22101 คณิตศาสตร์ 3", credit: 1.5 },
@@ -482,15 +711,17 @@
         let currentDisplayedGPA = 0;
         let targetGPA = 0;
         let animationFrameId;
+        let html5QrcodeScanner = null;
 
         window.onload = () => {
+            refreshIcons(); // Initial load
             updateLanguageUI();
             loadDefaults();
         };
 
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'th' : 'en';
-            document.getElementById('lang-toggle').textContent = currentLang === 'en' ? 'TH' : 'EN';
+            document.getElementById('lang-toggle').querySelector('span').textContent = currentLang === 'en' ? 'TH' : 'EN';
             updateLanguageUI();
         }
 
@@ -501,18 +732,38 @@
             document.getElementById('lbl-subject').textContent = t.subject;
             document.getElementById('lbl-credit').textContent = t.credit;
             document.getElementById('lbl-grade').textContent = t.grade;
-            document.getElementById('btn-add').textContent = t.addBtn;
-            document.getElementById('btn-reset').textContent = t.resetBtn;
             
+            // Buttons
+            document.getElementById('btn-add').innerHTML = `<i data-lucide="plus-circle" size="18"></i> ${t.addBtn}`;
+            document.getElementById('btn-reset').innerHTML = `<i data-lucide="rotate-ccw" size="16"></i> ${t.resetBtn}`;
+            document.getElementById('btn-export').innerHTML = `<i data-lucide="qr-code" size="18"></i> ${t.exportBtn}`;
+            document.getElementById('btn-import').innerHTML = `<i data-lucide="scan-line" size="18"></i> ${t.importBtn}`;
+            
+            // Text
             document.getElementById('modal-title').textContent = t.modalTitle;
             document.getElementById('modal-desc').textContent = t.modalDesc;
             document.getElementById('modal-cancel').textContent = t.modalCancel;
             document.getElementById('modal-confirm').textContent = t.modalConfirm;
-            document.getElementById('lbl-breakdown').textContent = t.breakdownTitle;
+            document.getElementById('lbl-breakdown').innerHTML = `<i data-lucide="bar-chart-2" size="16"></i> ${t.breakdownTitle}`;
+            document.getElementById('qr-export-title').textContent = t.qrTitle;
+            document.getElementById('qr-export-desc').textContent = t.qrDesc;
+            document.getElementById('qr-import-title').textContent = t.scanTitle;
+            document.getElementById('qr-import-status').textContent = t.scanStatus;
 
-            document.querySelectorAll('.subject-row:not(.extra-subject) .input-name').forEach(i => i.placeholder = t.placeholderSub);
+            document.getElementById('lbl-total-credits').textContent = t.totalCredits;
+            document.getElementById('lbl-total-points').textContent = t.totalPoints;
+
+            document.querySelectorAll('.input-name').forEach(i => i.placeholder = t.placeholderSub);
             document.querySelectorAll('.input-grade').forEach(i => i.placeholder = t.placeholderGrade);
             
+            document.querySelectorAll('.subject-row.extra-subject .input-name').forEach(input => {
+                const otherLang = currentLang === 'en' ? 'th' : 'en';
+                if (input.value === i18n[otherLang].extraSubName || input.value === '') {
+                    input.value = t.extraSubName;
+                }
+            });
+            
+            refreshIcons(); 
             calculateGPA(); 
         }
 
@@ -521,19 +772,24 @@
             defaultSubjects.forEach((sub, index) => {
                 setTimeout(() => {
                     addSubject(sub.name, sub.credit, false);
-                }, index * 40);
+                }, index * 30);
             });
             const t = i18n[currentLang];
-            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 40 + 50);
-            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 40 + 100);
+            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 30 + 50);
+            setTimeout(() => { addSubject(t.extraSubName, "", true); }, defaultSubjects.length * 30 + 100);
         }
+
+        // --- Core GPA Functions ---
 
         function addSubjectWithAnimation() {
-            addSubject();
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            const t = i18n[currentLang];
+            addSubject(t.extraSubName, "", true);
+            setTimeout(() => {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }, 50); 
         }
 
-        function addSubject(name = '', credit = '', isExtra = false) {
+        function addSubject(name = '', credit = '', isExtra = false, grade = '') {
             const t = i18n[currentLang];
             const div = document.createElement('div');
             div.className = 'subject-row slide-in'; 
@@ -542,14 +798,18 @@
             div.innerHTML = `
                 <input type="text" value="${name}" placeholder="${t.placeholderSub}" class="input-name">
                 <input type="number" value="${credit}" placeholder="Cr" inputmode="decimal" step="0.5" class="input-credit" oninput="calculateGPA()">
-                <input type="number" placeholder="${t.placeholderGrade}" inputmode="decimal" step="0.5" class="input-grade" oninput="calculateGPA()">
-                <button class="remove-btn" onclick="removeRow(this)">×</button>
+                <input type="number" value="${grade}" placeholder="${t.placeholderGrade}" inputmode="decimal" step="0.5" class="input-grade" oninput="calculateGPA()">
+                <button class="remove-btn" onclick="removeRow(this)">
+                    <i data-lucide="trash-2" size="18"></i>
+                </button>
             `;
             courseList.appendChild(div);
+            refreshIcons(); 
+            calculateGPA();
         }
 
         function removeRow(btn) {
-            const row = btn.parentElement;
+            const row = btn.closest('.subject-row');
             row.style.opacity = '0';
             row.style.transform = 'translateY(-10px)';
             setTimeout(() => {
@@ -558,15 +818,18 @@
             }, 300);
         }
 
-        function openResetModal() { document.getElementById('reset-modal').classList.add('active'); }
-        function closeModal() { document.getElementById('reset-modal').classList.remove('active'); }
+        function openResetModal() { 
+            document.getElementById('reset-modal').classList.add('active'); 
+            refreshIcons();
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        
         function confirmReset() {
             currentDisplayedGPA = 0;
             document.getElementById('final-gpa').textContent = "0.00";
             loadDefaults();
-            closeModal();
+            closeModal('reset-modal');
         }
-        document.getElementById('reset-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
         function calculateGPA() {
             let totalCredits = 0;
@@ -583,13 +846,18 @@
                 const creditVal = parseFloat(row.querySelector('.input-credit').value);
                 const gradeVal = parseFloat(row.querySelector('.input-grade').value);
 
-                if (!isNaN(creditVal) && !isNaN(gradeVal)) {
+                if (!isNaN(creditVal) && creditVal > 0 && !isNaN(gradeVal)) {
                     totalCredits += creditVal;
                     totalPoints += (creditVal * gradeVal);
                     
-                    let key = gradeVal.toString();
-                    if(counts[key] !== undefined) {
-                        counts[key]++;
+                    let key = Math.round(gradeVal * 2) / 2;
+                    if (key > 4) key = 4;
+                    if (key < 0) key = 0;
+                    
+                    const keyString = key.toFixed(1).replace(/\.0$/, '');
+
+                    if(counts[keyString] !== undefined) {
+                        counts[keyString]++;
                     }
                 }
             });
@@ -598,9 +866,8 @@
             animateGPAValue();
             updateBreakdownUI(counts);
 
-            const t = i18n[currentLang];
-            document.getElementById('lbl-total-credits').innerHTML = `${t.totalCredits} <strong style="color:var(--text-primary)">${totalCredits}</strong>`;
-            document.getElementById('lbl-total-points').innerHTML = `${t.totalPoints} <strong style="color:var(--text-primary)">${totalPoints.toFixed(1)}</strong>`;
+            document.getElementById('total-credits').textContent = totalCredits.toFixed(1);
+            document.getElementById('total-points').textContent = totalPoints.toFixed(1);
         }
 
         function updateBreakdownUI(counts) {
@@ -629,17 +896,140 @@
             const element = document.getElementById('final-gpa');
             function update() {
                 const diff = targetGPA - currentDisplayedGPA;
-                if (Math.abs(diff) < 0.005) {
+                if (Math.abs(diff) < 0.0001) {
                     currentDisplayedGPA = targetGPA;
                     element.textContent = currentDisplayedGPA.toFixed(2);
+                    animationFrameId = null;
                     return;
                 }
                 currentDisplayedGPA += diff * 0.15;
                 element.textContent = currentDisplayedGPA.toFixed(2);
                 animationFrameId = requestAnimationFrame(update);
             }
-            update();
+            animationFrameId = requestAnimationFrame(update);
         }
+
+        // --- QR Code Logic ---
+
+        function exportQR() {
+            const rows = document.querySelectorAll('.subject-row');
+            let data = [];
+            
+            // Compress data: [Name, Credit, Grade]
+            rows.forEach(row => {
+                const name = row.querySelector('.input-name').value;
+                const credit = row.querySelector('.input-credit').value;
+                const grade = row.querySelector('.input-grade').value;
+                
+                // Only save rows that have at least a name or a credit
+                if(name.trim() !== "" || credit.trim() !== "") {
+                    data.push([name, credit, grade]);
+                }
+            });
+
+            const jsonString = JSON.stringify(data);
+            // Use LZ-String to compress the JSON string
+            const compressed = LZString.compressToEncodedURIComponent(jsonString);
+            
+            // Clear previous QR
+            document.getElementById("qrcode").innerHTML = "";
+            
+            // Generate New QR
+            new QRCode(document.getElementById("qrcode"), {
+                text: compressed,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.L
+            });
+
+            document.getElementById('export-modal').classList.add('active');
+            refreshIcons();
+        }
+
+        function openScanModal() {
+            document.getElementById('import-modal').classList.add('active');
+            refreshIcons();
+            
+            // Start Scanner
+            if(!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", 
+                    { fps: 10, qrbox: {width: 250, height: 250} },
+                    /* verbose= */ false
+                );
+                html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            }
+        }
+
+        function closeScanModal() {
+            closeModal('import-modal');
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(_ => {
+                    html5QrcodeScanner = null; // Reset to allow re-initialization
+                }).catch(error => {
+                    console.error("Failed to clear html5QrcodeScanner. ", error);
+                });
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Handle the scanned code
+            try {
+                // Try to decompress first
+                let jsonString = LZString.decompressFromEncodedURIComponent(decodedText);
+                
+                // If null (not compressed) or empty, maybe it's raw JSON? 
+                // (Backward compatibility or if user scanned raw text)
+                if (!jsonString) {
+                    jsonString = decodedText;
+                }
+                
+                const data = JSON.parse(jsonString);
+                
+                if(Array.isArray(data)) {
+                    // Valid data found
+                    closeScanModal();
+                    
+                    // Clear current list
+                    courseList.innerHTML = '';
+                    currentDisplayedGPA = 0;
+
+                    // Populate
+                    data.forEach((item, index) => {
+                        // Support both format: [name, credit, grade] (New) AND {name, credit} (Old structure fallback if needed)
+                        let name = "", credit = "", grade = "";
+                        
+                        if(Array.isArray(item)) {
+                            name = item[0];
+                            credit = item[1];
+                            grade = item[2];
+                        } else {
+                            name = item.name;
+                            credit = item.credit;
+                            grade = item.grade || "";
+                        }
+
+                        setTimeout(() => {
+                            addSubject(name, credit, false, grade);
+                        }, index * 50);
+                    });
+
+                } else {
+                    alert("Invalid QR Code format");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Could not read QR data. Make sure it's a valid GPA code.");
+            }
+        }
+
+        function onScanFailure(error) {
+            // handle scan failure, usually better to ignore and keep scanning.
+            // console.warn(`Code scan error = ${error}`);
+        }
+
     </script>
 </body>
 </html>
